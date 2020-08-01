@@ -26,7 +26,7 @@
 
 ## 1、catkin_make
 ### 1）创建工作空间 (必须到src，前面的名字可任取)
-    mdkir -p ~/catkin_ws/src
+    mkdir -p ~/catkin_ws/src
     cd ~/catkin_ws/
     catkin_make
 ### 2）编译
