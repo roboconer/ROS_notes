@@ -34,6 +34,12 @@
     catkin_make
     source  ~/catkin_ws/devel/setup.bash
     #编译完成后要source刷新环境
+### 3）编译某个ros包
+    首先切换到自己的ROS工作空间： $ cd ~/catkin_ws
+    如果你想编译整个工作空间里面的包：$ catkin_make
+    如果你只想编译工作空间某一个包：$ catkin_make  -DCATKIN_WHITELIST_PACKAGES= "包名"
+    例如：
+    catkin_make  -DCATKIN_WHITELIST_PACKAGES="beginner_tutorials"
 ### 注意：catkin workspace
     src: package源代码
     build: cmake&catkin缓存和中间文件
