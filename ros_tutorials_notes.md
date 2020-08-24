@@ -347,16 +347,22 @@ rosed默认的编辑器是vim。如果想要将其他的编辑器设置成默认
 
 ## 12、消息(msg)和服务(srv)
     消息(msg)：msg文件就是一个描述ROS中所使用消息类型的简单文本，用来生成不同语言的源代码。
-    服务(srv)：一个srv文件描述一项服务，它包含两个部分：请求和响应，由'---'分隔。
+    服务(srv)：一个srv文件描述一项服务，它包含两个部分：请求和响应，由'---'分隔。下面是srv的一个样例：
 
     int64 A  #其中，A和B是请求，而Sum是响应。
     int64 B
     ---
     int64 Sum
 
+    下面是一个msg文件的样例，它使用了Header，string，和其他另外两个消息类型:
+    Header header
+    string child_frame_id
+    geometry_msgs/PoseWithCovariance pose
+    geometry_msgs/TwistWithCovariance twist
+    
     msg文件存放在package的msg目录下，srv文件则存放在srv目录下。
 
-在ROS中有一个特殊的数据类型：Header，它含有时间戳和坐标系信息。在msg文件的第一行经常可以看到Header header的声明。
+在ROS中有一个特殊的数据类型：Header，它含有时间戳和坐标系信息。在msg文件的第一行经常可以看到Header header的声明。msg文件实际上就是每行声明一个数据类型和变量名。
 
 ### 1）创建一个msg
 
@@ -364,30 +370,57 @@ rosed默认的编辑器是vim。如果想要将其他的编辑器设置成默认
 
     $ cd ~/catkin_ws/src/beginner_tutorials
     $ mkdir msg
-    $ echo "int64 num" > msg/Num.msg
+    $ echo "int64 num" > msg/Num.msg  //(最简单的例子，在.msg文件中只有一行数据)
     （可以仿造echo添加其他消息）
+    
+    当然，你可以仿造上面的形式多增加几行以得到更为复杂的消息：
+    string first_name
+    string last_name
+    uint8 age
+    uint32 score
 
-#### b、查看package.xml，添加：
-    <build_depend>message_generation</build_depend>
-    <exec_depend>message_runtime</exec_depend>
+#### b、查看package.xml，添加：(确保msg文件被转换成为C++，Python和其他语言的源代码)
+    <build_depend>message_generation</build_depend>  //在构建的时候，我们只需要"message_generation"
+    <exec_depend>message_runtime</exec_depend>       //在运行的时候，我们只需要"message_runtime"
 
 #### c、打开CMakeLists.txt：
     利用find_packag函数，增加对message_generation的依赖，这样就可以生成消息了，直接在COMPONENTS的列表里增加message_generation。
-
+    可以直接在COMPONENTS的列表里增加message_generation，就像这样：
+    find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs message_generation)
+    
+有时候你会发现，即使你没有调用find_package,你也可以编译通过。这是因为catkin把你所有的package都整合在一起，
+因此，如果其他的package调用了find_package，你的package的依赖就会是同样的配置。但是，在你单独编译时，忘记调用find_package会很容易出错。
+    
+    同样，你需要确保你设置了运行依赖：
+    catkin_package(
+    ...
+    CATKIN_DEPENDS message_runtime ...
+    ...)
+    
     对于add_message_files（），去掉注释符号#，用我的.msg代替Message*.msg：
     add_message_files(
     FILES
     Num.msg
     )
-    确保添加以下代码：
+    手动添加.msg文件后，我们要确保CMake知道在什么时候重新配置我们的project。确保添加以下代码：
     generate_messages()
-
     
+接下来，还有关键的一步：我们要确保msg文件被转换成为C++，Python和其他语言的源代码：在编辑器中打开CMakeLists.txt文件，并为下边这行代码去掉#:
+
+    # rosbuild_genmsg()
+   
 
 #### d、通过rosmsg show命令，检查ROS是否能够识消息：
 
     $ rosmsg show beginner_tutorials/Num
     
+    如果忘记了消息所在的package，也可以省略掉package名
+    输入：$ rosmsg show Num
+    
+    你将会看到：
+    [beginner_tutorials/Num]:
+    int64 num
+      
     注意：可能需要添加环境变量：
     $ gedit ~/.bashrc
     $ export ROS_PACKAGE_PATH=~/catkin_ws/src/beginner_tutorials:$ROS_PACKAGE_PATH
@@ -405,12 +438,24 @@ rosed默认的编辑器是vim。如果想要将其他的编辑器设置成默认
 
     $ roscp rospy_tutorials AddTwoInts.srv srv/AddTwoInts.srv
 
+    同样的，我们要确保srv文件被转换成C++，Python和其他语言的源代码。在CMakeLists.txt文件中增加了对message_generation的依赖:
+    
+    find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs message_generation)  //针对实际的文件包含其他文件
+    
+    message_generation 对msg和srv都起作用。同样，跟msg文件类似，你也需要在package.xml文件中做一些修改。 
+    
 #### b、修改CMakeLists.txt：
     查看add_service_files，删掉#，去除对语句的注释，用自己的srv文件名替换掉那些Service*.srv文件: 
     add_service_files(
     FILES
     AddTwoInts.srv
     )
+    
+    删掉#，去除对如下语句的注释：
+    # rosbuild_gensrv()
+   
+以上就是创建一个服务所需的所有步骤。现在，你可以生成自己的服务源代码了。
+    
 
 #### c、使用rossrv show检查ROS是否能够识别服务：
     使用方法：
@@ -425,7 +470,7 @@ rosed默认的编辑器是vim。如果想要将其他的编辑器设置成默认
 去掉注释并附加上所有消息文件所依赖的含有.msg文件的package（不要添加roscpp,rospy）：
     generate_messages(
     DEPENDENCIES
-    std_msgs
+    std_msgs  # Or other packages containing msgs
     )
 
 由于增加了新的消息，所以我们需要重新编译我们的package：
@@ -437,7 +482,16 @@ rosed默认的编辑器是vim。如果想要将其他的编辑器设置成默认
 所有在msg路径下的.msg文件都将转换为ROS所支持语言的源代码。生成的C++头文件将会放置在~/catkin_ws/devel/include/beginner_tutorials/。 Python脚本语言会在 ~/catkin_ws/devel/lib/python2.7/dist-packages/beginner_tutorials/msg 目录下创建。 lisp文件会出现在 ~/catkin_ws/devel/share/common-lisp/ros/beginner_tutorials/msg/ 路径下. 
 
 
+总结一下到目前为止我们接触过的一些命令：
 
+    rospack = ros+pack(age) : 提供ROS package相关的信息 
+    rosstack = ros+stack  : 提供stacks 相关的信息 
+    roscd = ros+cd  : changes directory to a ROS package or stack 
+    rosls = ros+ls  : lists files in a ROS package 
+    roscp = ros+cp  : copies files from/to a ROS package 
+    rosmsg = ros+msg : provides information related to ROS message definitions 
+    rossrv = ros+srv : provides information related to ROS service definitions 
+    rosmake = ros+make : makes (compiles) a ROS package 
 
 
 ## 13、编写简单的消息发布器和订阅器 (C++)
