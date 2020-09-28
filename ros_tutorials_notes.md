@@ -444,7 +444,7 @@ rosed默认的编辑器是vim。如果想要将其他的编辑器设置成默认
     
     message_generation 对msg和srv都起作用。同样，跟msg文件类似，你也需要在package.xml文件中做一些修改。
     
-创建好了name.srv(节点的输入和输出)文件之后，会自动创建好nameRequest.h和nameResponse.h和name.py
+创建好了name.srv(节点的输入和输出)文件之后，catkin_make之后，会自动创建好nameRequest.h和nameResponse.h和name.py
     
 #### b、修改CMakeLists.txt：
     查看add_service_files，删掉#，去除对语句的注释，用自己的srv文件名替换掉那些Service*.srv文件: 
